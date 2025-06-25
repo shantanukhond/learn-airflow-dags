@@ -12,14 +12,14 @@ Whether you're new to data orchestration or looking to deepen your Airflow knowl
 
 This repository is structured to mirror our learning path, making it easy to find the code relevant to each tutorial:
 
-* **`Dags/Basics/`**: Get started with core Airflow concepts. This section contains:
+* **`01_basic/`**: Get started with core Airflow concepts. This section contains:
     * Your very first "Hello World" DAG.
     * Examples demonstrating various operators (e.g., `BashOperator`, `PythonOperator`).
     * How to define task dependencies and control workflow flow.
     * ...and more foundational examples as the series progresses!
-* **`Dags/Advanced/`**: (Coming Soon!) Dive into more complex Airflow features, including XComs, branching, sensors, and dynamic DAG generation.
-* **`Dags/CICD/`**: (Coming Soon!) Explore best practices for continuous integration and deployment of your Airflow DAGs.
-* **`utils/`**: Helper scripts or shared modules if applicable to your DAGs.
+* **`02_advanced`**: (Coming Soon!) Dive into more complex Airflow features, including XComs, branching, sensors, and dynamic DAG generation.
+* **`03_cicd`**: (Coming Soon!) Explore best practices for continuous integration and deployment of your Airflow DAGs.
+* **`04_utils`**: Helper scripts or shared modules if applicable to your DAGs.
 
 ---
 
@@ -43,11 +43,11 @@ For detailed explanations, theory, troubleshooting tips, and written versions of
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/shantanukhond/learn-airflow-dags.git](https://github.com/shantanukhond/learn-airflow-dags.git)
+    git clone https://github.com/shantanukhond/learn-airflow-dags.git
     cd learn-airflow-dags
     ```
 2.  **Ensure Airflow is Running:** Make sure you have an Apache Airflow environment set up (e.g., via Docker Compose or pip). Refer to our [Installation Guide on the documentation website](https://airflow.atwish.org/docs/Installation/PiPy) if you need help.
-3.  **Place DAGs:** Copy the `.py` or `.mdx` DAG files from the relevant subdirectories (e.g., `Dags/Basics/`) into your Airflow's `dags` folder.
+3.  **Place DAGs:** Copy the `.py` DAG files from the relevant subdirectories into your Airflow's `dags` folder.
 4.  **Explore!** Open your Airflow UI and watch your new DAGs appear.
 
 ---
