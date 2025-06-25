@@ -35,7 +35,7 @@ This code comes alive with our step-by-step video tutorials. Subscribe to our Yo
 
 For detailed explanations, theory, troubleshooting tips, and written versions of our tutorials, explore our official documentation website. All code snippets are available there for easy copy-pasting.
 
-➡️ **[Explore the Documentation Website](https://airflow.atwish.org) (replace with your actual docs URL if different)**
+➡️ **[Explore the Documentation Website](https://airflow.atwish.org)**
 
 ---
 
