@@ -1,0 +1,17 @@
+archives
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Virtual environment (common for Python projects)
+.venv/
+venv/
+env/
+
+# Editor specific files (common)
+.vscode/
+.idea/
+
+# Operating System generated files
+.DS_Store # macOS
+Thumbs.db # Windows
