@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
 from datetime import datetime, timedelta
 
 default_args = {
@@ -15,7 +15,7 @@ default_args = {
 with DAG(
     dag_id='my_first_airflow_dag',
     start_date=datetime(2023, 1, 1),
-    schedule_interval=timedelta(days=1),
+    schedule=timedelta(days=1),
     catchup=False,
     default_args=default_args,
     tags=['hello_world', 'learning'],
