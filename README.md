@@ -10,16 +10,50 @@ Whether you're new to data orchestration or looking to deepen your Airflow knowl
 
 ### ✨ What You'll Find Here
 
-This repository is structured to mirror our learning path, making it easy to find the code relevant to each tutorial:
+This repository holds all Airflow **code** — DAGs and supporting plugins — in one place:
 
-* **`01_basic/`**: Get started with core Airflow concepts. This section contains:
+```
+.
+├── dags/                 # workflow definitions
+│   ├── 01_basic/
+│   └── google_fit_ingestion/
+└── plugins/              # shared Python modules imported by DAGs
+    └── google_fit/
+```
+
+Tutorial and project sections under `dags/`:
+
+* **`dags/01_basic/`**: Get started with core Airflow concepts. This section contains:
     * Your very first "Hello World" DAG.
     * Examples demonstrating various operators (e.g., `BashOperator`, `PythonOperator`).
     * How to define task dependencies and control workflow flow.
     * ...and more foundational examples as the series progresses!
-* **`02_advanced`**: (Coming Soon!) Dive into more complex Airflow features, including XComs, branching, sensors, and dynamic DAG generation.
-* **`03_cicd`**: (Coming Soon!) Explore best practices for continuous integration and deployment of your Airflow DAGs.
-* **`04_utils`**: Helper scripts or shared modules if applicable to your DAGs.
+* **`dags/google_fit_ingestion/`**: Google Fit → Postgres pipeline example.
+* **`dags/02_advanced`**: (Coming Soon!) Dive into more complex Airflow features, including XComs, branching, sensors, and dynamic DAG generation.
+* **`dags/03_cicd`**: (Coming Soon!) Explore best practices for continuous integration and deployment of your Airflow DAGs.
+
+---
+
+### 🐍 Local Python environment
+
+For running tests, `get_token.py`, or editing plugins outside Docker:
+
+```bash
+./scripts/setup_venv.sh
+source .venv/bin/activate
+pytest tests/ -v
+```
+
+**Test live Google Fit credentials** (after running `get_token.py`):
+
+```bash
+python scripts/test_fetch_steps.py          # last 7 days
+python scripts/test_fetch_steps.py --days 30
+```
+
+Requires `scripts/token.json` from `get_token.py`.
+
+Requires **Python 3.10+** (Airflow 3.x compatible). Dependencies live in `requirements.txt` (runtime) and `requirements-dev.txt` (tests).
 
 ---
 
@@ -41,14 +75,12 @@ For detailed explanations, theory, troubleshooting tips, and written versions of
 
 ### 🛠️ Getting Started with the Code
 
-1.  **Clone the repository:**
+1.  **Clone this repo into your Airflow project's `airflow-code/` folder** (see [learn-airflow](https://github.com/shantanukhond/learn-airflow)):
     ```bash
-    git clone https://github.com/shantanukhond/learn-airflow-dags.git
-    cd learn-airflow-dags
+    git clone https://github.com/shantanukhond/learn-airflow-dags.git airflow-code
     ```
-2.  **Ensure Airflow is Running:** Make sure you have an Apache Airflow environment set up (e.g., via Docker Compose or pip). Refer to our [Installation Guide on the documentation website](https://airflow.atwish.org/docs/Installation/PiPy) if you need help.
-3.  **Place DAGs:** Copy the `.py` DAG files from the relevant subdirectories into your Airflow's `dags` folder.
-4.  **Explore!** Open your Airflow UI and watch your new DAGs appear.
+2.  **Ensure Airflow is Running:** Use the [learn-airflow](https://github.com/shantanukhond/learn-airflow) Docker Compose setup, which mounts `airflow-code/dags` and `airflow-code/plugins` from this repository.
+3.  **Explore!** Open your Airflow UI and watch your DAGs appear.
 
 ---
 

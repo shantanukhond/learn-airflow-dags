@@ -3,6 +3,10 @@ archives
 __pycache__/
 *.pyc
 
+# OAuth secrets (never commit)
+client_secret.json
+token.json
+
 # Virtual environment (common for Python projects)
 .venv/
 venv/
