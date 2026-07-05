@@ -89,13 +89,17 @@ def main() -> None:
         print("WARNING: Got stub data — access token was not used.")
         sys.exit(1)
 
-    print(f"{'Date':<12} {'Steps':>8} {'Distance m':>12} {'Calories':>10}")
-    print("-" * 48)
+    print(f"{'Date':<12} {'Steps':>7} {'Cal':>7} {'Active':>7} {'HR':>6} {'Sleep m':>8}")
+    print("-" * 54)
     for row in silver["steps"]:
         day = row["date"]
-        dist = next((d["distance_m"] for d in silver["distance"] if d["date"] == day), 0)
         cal = next((c["calories"] for c in silver["calories"] if c["date"] == day), 0)
-        print(f"{day:<12} {row['steps']:>8} {dist:>12.0f} {cal:>10.0f}")
+        active = next(
+            (a["active_minutes"] for a in silver["active_minutes"] if a["date"] == day), 0
+        )
+        hr = next((h["avg_bpm"] for h in silver["heart_rate"] if h["date"] == day), 0)
+        sleep = next((s["sleep_minutes"] for s in silver["sleep"] if s["date"] == day), 0)
+        print(f"{day:<12} {row['steps']:>7} {cal:>7.0f} {active:>7} {hr:>6.0f} {sleep:>8.0f}")
 
     print()
     print("Credentials work — live Google Fit data received.")

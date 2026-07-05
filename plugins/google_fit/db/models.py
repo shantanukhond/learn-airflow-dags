@@ -29,15 +29,6 @@ class SilverDailySteps(Base):
     source: Mapped[str] = mapped_column(String(50), nullable=False)
 
 
-class SilverDailyDistance(Base):
-    __tablename__ = "daily_distance"
-    __table_args__ = {"schema": "silver"}
-
-    date: Mapped[date] = mapped_column(Date, primary_key=True)
-    distance_m: Mapped[float] = mapped_column(Float, nullable=False)
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-
-
 class SilverDailyCalories(Base):
     __tablename__ = "daily_calories"
     __table_args__ = {"schema": "silver"}
@@ -47,11 +38,50 @@ class SilverDailyCalories(Base):
     source: Mapped[str] = mapped_column(String(50), nullable=False)
 
 
+class SilverDailyActiveMinutes(Base):
+    __tablename__ = "daily_active_minutes"
+    __table_args__ = {"schema": "silver"}
+
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    active_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+
+
+class SilverDailyHeartRate(Base):
+    __tablename__ = "daily_heart_rate"
+    __table_args__ = {"schema": "silver"}
+
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    avg_bpm: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+
+
+class SilverDailySleep(Base):
+    __tablename__ = "daily_sleep"
+    __table_args__ = {"schema": "silver"}
+
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    sleep_minutes: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+
+
+class SilverDailyDistance(Base):
+    __tablename__ = "daily_distance"
+    __table_args__ = {"schema": "silver"}
+
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    distance_m: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+
+
 class GoldDailySummary(Base):
     __tablename__ = "daily_summary"
     __table_args__ = {"schema": "gold"}
 
     date: Mapped[date] = mapped_column(Date, primary_key=True)
     steps: Mapped[int] = mapped_column(Integer, nullable=False)
-    distance_m: Mapped[float] = mapped_column(Float, nullable=False)
     calories: Mapped[float] = mapped_column(Float, nullable=False)
+    active_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    avg_bpm: Mapped[float] = mapped_column(Float, nullable=False)
+    sleep_minutes: Mapped[float] = mapped_column(Float, nullable=False)
+    distance_m: Mapped[float] = mapped_column(Float, nullable=False)
