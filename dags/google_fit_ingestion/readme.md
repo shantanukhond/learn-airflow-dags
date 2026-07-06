@@ -4,6 +4,46 @@ To prove my family wrong — who always claim I sit the whole day and walk only 
 
 This project pulls daily fitness data from the Google Fit API, stores it in a **medallion** Postgres layout (bronze → silver → gold), and will eventually feed Superset dashboards so the numbers speak for themselves.
 
+## Airflow core concepts in this project
+
+Mapped to the [Core Concepts](https://airflow.atwish.org/docs/core-concepts) docs. For full explanations and code examples from this repo, see **[airflow-concepts.md](airflow-concepts.md)**.
+
+| Concept | Status | What you learn here |
+|---------|--------|---------------------|
+| **DAGs** | covered | Two DAGs — `google_fit_ingest` (bronze) and `google_fit_transform` (silver + gold) |
+| **Operators** | covered | `@task` (Python) and `TriggerDagRunOperator` to chain ingest → transform |
+| **PythonOperator / `@task` (TaskFlow API)** | covered | `@dag` + `@task` decorators; pass data between tasks via TaskFlow args |
+| **Hooks + Connections** | covered | `PostgresHook`, `BaseHook` for Google OAuth; `google_fit_api` + `google_fit_postgres` connections |
+| **Scheduling (cron + catchup)** | covered | `@daily` on ingest, `catchup=False`, transform triggered with `schedule=None` |
+| **Executors** | covered | Tasks run via Docker Compose setup (LocalExecutor) — observe in the Airflow UI |
+| **XComs** | covered | Silver row count passed `bronze_to_silver` → `silver_to_gold` via TaskFlow; cross-DAG data via Postgres |
+| **Plugins** | covered | Shared code in `plugins/google_fit/` imported by DAGs (auth, API client, DB loader) |
+| **Task dependencies** | covered | `bronze_to_silver >> silver_to_gold` plus TaskFlow `silver_to_gold(silver)` in `google_fit_transform` |
+| **Context (`**context`)** | covered | `data_interval_end`, `logical_date` to compute the 7-day lookback window |
+| **Sensors** | planned | Wait for API quota, file arrival, or upstream data — not used yet |
+| **Task Groups** | planned | Organise tasks when a single DAG grows beyond 2–3 steps |
+| **Dynamic Task Mapping** | planned | Map one task per day for backfill (e.g. 30 parallel day fetches) |
+| **Trigger Rules** | planned | `all_done`, `one_failed`, etc. for partial-failure handling |
+| **Retries + `retry_delay`** | planned | Retry Google Fit API calls on transient 5xx errors |
+| **Variables & Params** | planned | Drive `LOOKBACK_DAYS` or date range from Airflow Variables / DAG params |
+| **SLAs / `sla_miss_callback`** | planned | Alert when ingest misses the daily window |
+| **`on_failure_callback`** | planned | Slack/email alert when bronze ingest fails |
+| **BranchPythonOperator** | planned | Skip silver/gold when bronze payload is empty |
+
+See **[airflow-concepts.md](airflow-concepts.md)** for code examples of every concept above.
+
+### Concepts → files quick map
+
+```
+@task / TaskFlow     →  dag_google_fit_ingest.py, dag_google_fit_transform.py
+Task dependencies    →  bronze_to_silver >> silver_to_gold  (dag_google_fit_transform.py)
+TriggerDagRunOperator →  dag_google_fit_ingest.py
+Hooks + Connections  →  plugins/google_fit/auth.py, PostgresHook in DAGs
+Scheduling           →  @daily + catchup=False on google_fit_ingest
+XComs (in-DAG)       →  silver row count passed bronze_to_silver → silver_to_gold
+Cross-DAG data       →  bronze / silver / gold Postgres tables (medallion pattern)
+```
+
 ## Architecture
 
 Open [`architecture.drawio`](architecture.drawio) in [draw.io](https://app.diagrams.net/) (or the Draw.io extension in VS Code / Cursor) for the full diagram.
@@ -37,9 +77,13 @@ Metrics are fetched in a **single** Google Fit aggregate call. See `plugins/goog
 
 ```
 dags/google_fit_ingestion/
-└── dag_google_fit_sync.py      # ETL DAG
+├── readme.md                   # Project overview
+├── airflow-concepts.md         # Airflow concepts + codebase examples
+├── dag_google_fit_ingest.py    # API → bronze
+└── dag_google_fit_transform.py # bronze → silver → gold
 
 plugins/google_fit/
+├── dag_utils.py                # Shared lookback window + connection IDs
 ├── auth.py                     # OAuth token refresh via Airflow Connection
 ├── constants.py                # API + metric definitions
 ├── api/client.py               # fetch_fitness_aggregate, parse_aggregate_to_silver
@@ -53,25 +97,36 @@ scripts/
 └── test_fetch_steps.py         # Live credential check with summary table
 ```
 
-## DAG: `google_fit_sync`
+## DAGs
 
-| Task | What it does | DB layer |
-|------|--------------|----------|
-| `extract` | Fetch raw JSON from Google Fit API, save to bronze | `bronze.fitness_raw` |
-| `transform` | Parse JSON into typed silver records (in memory / XCom) | — |
-| `load` | Upsert silver tables, rebuild gold summary | `silver.*`, `gold.daily_summary` |
+Two DAGs — ingest (bronze) is separate; silver and gold are combined so you can practice **task dependencies** and **XComs** in one DAG.
 
-Task order (explicit chain + TaskFlow args):
+| DAG | Schedule | What it does |
+|-----|----------|--------------|
+| `google_fit_ingest` | `@daily` | Fetch last 7 days from Google Fit API → `bronze.fitness_raw` → trigger transform |
+| `google_fit_transform` | manual / triggered | bronze → silver → gold in one DAG |
 
-```python
-extracted = extract()
-transformed = transform(extracted)
-loaded = load(transformed)
+```
+google_fit_ingest:     extract_to_bronze >> trigger_transform
 
-extracted >> transformed >> loaded
+google_fit_transform:  bronze_to_silver >> silver_to_gold
+                       (TaskFlow: silver_to_gold(silver) + explicit >>)
 ```
 
-If the `google_fit_api` connection is missing or misconfigured, extract falls back to **stub data** (zeros) so the DAG still parses and runs locally.
+### Task dependencies in `google_fit_transform`
+
+Both styles are shown on purpose — they express the same dependency:
+
+```python
+silver = bronze_to_silver()
+gold = silver_to_gold(silver)   # TaskFlow — silver row count passed via XCom
+
+silver >> gold                  # explicit bit-shift chain (Graph view)
+```
+
+Trigger **`google_fit_ingest`** only — transform follows automatically. Or run **`google_fit_transform`** alone after bronze data exists.
+
+If the `google_fit_api` connection is missing or misconfigured, ingest falls back to **stub data** (zeros) so the DAG still parses and runs locally.
 
 ## Database (fitness DB — localhost:5434)
 
@@ -248,11 +303,11 @@ python scripts/print_raw_json.py --silver       # bronze + parsed silver
 pytest tests/ -v
 ```
 
-### 4. Run the DAG
+### 4. Run the pipeline
 
-1. Trigger **`google_fit_sync`** in the Airflow UI (or wait for `@daily` schedule).
-2. Watch **extract → transform → load** complete in order.
-3. Check task logs — load prints row counts, e.g. `Loaded 5 silver row(s), 1 gold row(s)`.
+1. Trigger **`google_fit_ingest`** in the Airflow UI (or wait for `@daily` schedule).
+2. It auto-triggers **`google_fit_transform`** (silver → gold).
+3. Check task logs in each DAG for row counts.
 
 ### 5. Verify data loaded
 
