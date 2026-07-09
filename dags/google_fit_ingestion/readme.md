@@ -20,15 +20,15 @@ Mapped to the [Core Concepts](https://airflow.atwish.org/docs/core-concepts) doc
 | **Plugins** | covered | Shared code in `plugins/google_fit/` imported by DAGs (auth, API client, DB loader) |
 | **Task dependencies** | covered | `bronze_to_silver >> silver_to_gold` plus TaskFlow `silver_to_gold(silver)` in `google_fit_transform` |
 | **Context (`**context`)** | covered | `data_interval_end`, `logical_date` to compute the 7-day lookback window |
-| **Sensors** | planned | Wait for API quota, file arrival, or upstream data — not used yet |
-| **Task Groups** | planned | Organise tasks when a single DAG grows beyond 2–3 steps |
-| **Dynamic Task Mapping** | planned | Map one task per day for backfill (e.g. 30 parallel day fetches) |
-| **Trigger Rules** | planned | `all_done`, `one_failed`, etc. for partial-failure handling |
-| **Retries + `retry_delay`** | planned | Retry Google Fit API calls on transient 5xx errors |
-| **Variables & Params** | planned | Drive `LOOKBACK_DAYS` or date range from Airflow Variables / DAG params |
-| **SLAs / `sla_miss_callback`** | planned | Alert when ingest misses the daily window |
-| **`on_failure_callback`** | planned | Slack/email alert when bronze ingest fails |
-| **BranchPythonOperator** | planned | Skip silver/gold when bronze payload is empty |
+| **Sensors** | not covered | — |
+| **Task Groups** | not covered | — |
+| **Dynamic Task Mapping** | not covered | — |
+| **Trigger Rules** | not covered | — |
+| **Retries + `retry_delay`** | not covered | — |
+| **Variables & Params** | not covered | — |
+| **SLAs / `sla_miss_callback`** | not covered | — |
+| **`on_failure_callback`** | not covered | — |
+| **BranchPythonOperator** | not covered | — |
 
 See **[airflow-concepts.md](airflow-concepts.md)** for code examples of every concept above.
 

@@ -1,8 +1,13 @@
 # Airflow Concepts — Google Fit Project
 
-Each concept from the [Core Concepts](https://airflow.atwish.org/docs/core-concepts) docs, with a **real example from this codebase**.
+Each concept from the [Core Concepts](https://airflow.atwish.org/docs/core-concepts) docs, with a **real example from this codebase** where covered.
 
-**Legend:** ✅ covered in this project · 🔜 planned for a follow-up lesson
+**Legend:** ✅ covered in this project · ❌ not covered in this project
+
+| Status | Concepts |
+|--------|----------|
+| ✅ **Covered** | DAGs, Operators, `@task` / TaskFlow, Task dependencies, XComs, Hooks + Connections, Scheduling, Context, Plugins, Executors |
+| ❌ **Not covered** | Sensors, Task Groups, Dynamic Task Mapping, Trigger Rules, Retries, Variables & Params, SLAs, `on_failure_callback`, BranchPythonOperator |
 
 ---
 
@@ -264,11 +269,11 @@ This project does not configure an executor in code — it uses whatever the [le
 
 ---
 
-## 🔜 Sensors
+## ❌ Sensors — not covered
 
 A **sensor** waits for an external condition (file exists, API ready, partition landed).
 
-**Not used yet.** A natural addition for this project:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 # Example — wait for bronze row before transform
@@ -289,11 +294,11 @@ See [Sensors — poke vs reschedule](https://airflow.atwish.org/docs/core-concep
 
 ---
 
-## 🔜 Task Groups
+## ❌ Task Groups — not covered
 
 **Task Groups** visually group related tasks in the Graph view.
 
-**Not used yet.** Could wrap transform tasks:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 from airflow.utils.task_group import TaskGroup
@@ -306,11 +311,11 @@ with TaskGroup("medallion_refine") as refine:
 
 ---
 
-## 🔜 Dynamic Task Mapping
+## ❌ Dynamic Task Mapping — not covered
 
 **Dynamic task mapping** spawns one task instance per item (e.g. one task per day for backfill).
 
-**Not used yet.** Could map over a date range:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 @task
@@ -323,11 +328,11 @@ fetch_one_day.expand(day=days)
 
 ---
 
-## 🔜 Trigger Rules
+## ❌ Trigger Rules — not covered
 
 **Trigger rules** control when a task runs based on upstream task states (default: `all_success`).
 
-**Not used yet.** Example — run gold even if silver wrote zero rows:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 @task(trigger_rule="all_done")
@@ -337,11 +342,11 @@ def silver_to_gold(silver_rows: int) -> int:
 
 ---
 
-## 🔜 Retries + `retry_delay`
+## ❌ Retries + `retry_delay` — not covered
 
 **Retries** re-run a failed task automatically after a delay.
 
-**Not used yet.** Good fit for flaky Google Fit API calls:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 @task(retries=3, retry_delay=timedelta(minutes=5))
@@ -351,11 +356,11 @@ def extract_to_bronze(**context) -> int:
 
 ---
 
-## 🔜 Variables & Params
+## ❌ Variables & Params — not covered
 
 **Variables** are global key-value config. **Params** are per-DAG run inputs from the UI.
 
-**Not used yet.** `LOOKBACK_DAYS` in `dag_utils.py` could become a Variable:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 from airflow.models import Variable
@@ -375,11 +380,11 @@ def google_fit_ingest():
 
 ---
 
-## 🔜 SLAs / `sla_miss_callback`
+## ❌ SLAs / `sla_miss_callback` — not covered
 
 An **SLA** (Service Level Agreement) flags tasks that take too long.
 
-**Not used yet.**
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 @task(sla=timedelta(hours=2))
@@ -389,11 +394,11 @@ def extract_to_bronze(**context) -> int:
 
 ---
 
-## 🔜 `on_failure_callback`
+## ❌ `on_failure_callback` — not covered
 
 A **callback** runs when a task fails — useful for Slack/email alerts.
 
-**Not used yet.**
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 def alert_on_failure(context):
@@ -406,11 +411,11 @@ def extract_to_bronze(**context) -> int:
 
 ---
 
-## 🔜 BranchPythonOperator
+## ❌ BranchPythonOperator — not covered
 
 **Branching** runs only one downstream path based on a condition.
 
-**Not used yet.** Could skip gold when bronze is empty:
+**Not covered in this project.** Example of how it could be added:
 
 ```python
 from airflow.operators.python import BranchPythonOperator
@@ -423,20 +428,29 @@ def choose_branch(**context):
 
 ---
 
-## Quick reference — concept → file
+## Quick reference — covered concepts → file
 
-| Concept | File(s) |
-|---------|---------|
-| DAG definition | `dag_google_fit_ingest.py`, `dag_google_fit_transform.py` |
-| `@task` | Both DAG files |
-| Task dependencies `>>` | `dag_google_fit_ingest.py:61`, `dag_google_fit_transform.py:63` |
-| TaskFlow / XCom | `dag_google_fit_transform.py:59-60` |
-| TriggerDagRunOperator | `dag_google_fit_ingest.py:54-59` |
-| PostgresHook | All DAG tasks |
-| BaseHook + Connection | `plugins/google_fit/auth.py` |
-| Context / dates | `plugins/google_fit/dag_utils.py` |
-| Scheduling | `@daily` on ingest, `schedule=None` on transform |
-| Plugins | `plugins/google_fit/` |
+| Concept | Status | File(s) |
+|---------|--------|---------|
+| DAG definition | ✅ covered | `dag_google_fit_ingest.py`, `dag_google_fit_transform.py` |
+| `@task` | ✅ covered | Both DAG files |
+| Task dependencies `>>` | ✅ covered | `dag_google_fit_ingest.py:61`, `dag_google_fit_transform.py:63` |
+| TaskFlow / XCom | ✅ covered | `dag_google_fit_transform.py:59-60` |
+| TriggerDagRunOperator | ✅ covered | `dag_google_fit_ingest.py:54-59` |
+| PostgresHook | ✅ covered | All DAG tasks |
+| BaseHook + Connection | ✅ covered | `plugins/google_fit/auth.py` |
+| Context / dates | ✅ covered | `plugins/google_fit/dag_utils.py` |
+| Scheduling | ✅ covered | `@daily` on ingest, `schedule=None` on transform |
+| Plugins | ✅ covered | `plugins/google_fit/` |
+| Sensors | ❌ not covered | — |
+| Task Groups | ❌ not covered | — |
+| Dynamic Task Mapping | ❌ not covered | — |
+| Trigger Rules | ❌ not covered | — |
+| Retries + `retry_delay` | ❌ not covered | — |
+| Variables & Params | ❌ not covered | — |
+| SLAs | ❌ not covered | — |
+| `on_failure_callback` | ❌ not covered | — |
+| BranchPythonOperator | ❌ not covered | — |
 
 ---
 
