@@ -1,6 +1,8 @@
 # About the Google Fitness Ingestion Project
 To prove my family wrong, who always claim I sit the whole day and walk only 800 steps a day. I decided to over-engineer my watch report dashboard with Airflow and Superset (In Future seprate video). Jokes apart but, we are creating this project to cover majority of core conccepts in Apache airflow with a simple project. 
 We are covering following topics with this project which will help you crack interview.
+
+## Covered in this project
 - **DAGs**
 - **Operators**
 - **PythonOperator / `@task` (TaskFlow API)**
@@ -11,6 +13,17 @@ We are covering following topics with this project which will help you crack int
 - **Plugins**
 - **Task dependencies**
 - **Context (`**context`)**
+- **BranchPythonOperator**
+- **Retries + `retry_delay`**
+- **Variables & Params**
+- **SLAs / `sla_miss_callback`**
+- **`on_failure_callback`**
+- **Task Groups**
+- **Dynamic Task Mapping**
+- **Trigger Rules**
+
+## Not covered in this project
+- **Sensors**
 
 # Project completion steps
 Make sure your airflow is runing if you do not have it refer https://github.com/shantanukhond/learn-airflow. This will help you quickstart airflow. Inside the same folder clone this repo into `airflow-code/` folder using
