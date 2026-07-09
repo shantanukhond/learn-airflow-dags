@@ -6,8 +6,8 @@ Each concept from the [Core Concepts](https://airflow.atwish.org/docs/core-conce
 
 | Status | Concepts |
 |--------|----------|
-| ✅ **Covered** | DAGs, Operators, `@task` / TaskFlow, Task dependencies, XComs, Hooks + Connections, Scheduling, Context, Plugins, Executors |
-| ❌ **Not covered** | Sensors, Task Groups, Dynamic Task Mapping, Trigger Rules, Retries, Variables & Params, SLAs, `on_failure_callback`, BranchPythonOperator |
+| ✅ **Covered** | DAGs, Operators, `@task` / TaskFlow, Task dependencies, XComs, Hooks + Connections, Scheduling, Context, Plugins, Executors, Retries, Variables & Params, SLAs, `on_failure_callback`, BranchPythonOperator, Task Groups, Dynamic Task Mapping, Trigger Rules |
+| ❌ **Not covered** | Sensors |
 
 ---
 
@@ -342,88 +342,97 @@ def silver_to_gold(silver_rows: int) -> int:
 
 ---
 
-## ❌ Retries + `retry_delay` — not covered
+## ✅ Retries + `retry_delay`
 
 **Retries** re-run a failed task automatically after a delay.
 
-**Not covered in this project.** Example of how it could be added:
+**In this project** — `extract_to_bronze` retries on API/DB failures:
 
 ```python
-@task(retries=3, retry_delay=timedelta(minutes=5))
+@task(
+    retries=2,
+    retry_delay=timedelta(minutes=2),
+    on_failure_callback=alert_on_failure,
+)
 def extract_to_bronze(**context) -> int:
     ...
 ```
 
 ---
 
-## ❌ Variables & Params — not covered
+## ✅ Variables & Params
 
-**Variables** are global key-value config. **Params** are per-DAG run inputs from the UI.
+**Variables** are global key-value config (Admin → Variables). **Params** are per-DAG-run inputs (UI trigger / DAG defaults).
 
-**Not covered in this project.** Example of how it could be added:
-
-```python
-from airflow.models import Variable
-
-LOOKBACK_DAYS = int(Variable.get("google_fit_lookback_days", default_var=7))
-```
-
-Or a DAG param:
+**In this project** — `lookback_days` can be set per run via `params`, or globally via Variable `google_fit_lookback_days`:
 
 ```python
-@dag(params={"lookback_days": 7}, ...)
+@dag(params={"lookback_days": LOOKBACK_DAYS}, ...)
 def google_fit_ingest():
-    @task
-    def extract_to_bronze(**context) -> int:
-        days = context["params"]["lookback_days"]
+    ...
+
+# plugins/google_fit/dag_utils.py
+def lookback_days_from_context(context: dict) -> int:
+    param_days = context.get("params", {}).get("lookback_days")
+    if param_days is not None:
+        return int(param_days)
+    return int(Variable.get("google_fit_lookback_days", default_var=LOOKBACK_DAYS))
 ```
 
 ---
 
-## ❌ SLAs / `sla_miss_callback` — not covered
+## ✅ SLAs / `sla_miss_callback`
 
-An **SLA** (Service Level Agreement) flags tasks that take too long.
+An **SLA** flags tasks that take too long. **`sla_miss_callback`** runs when the SLA is breached.
 
-**Not covered in this project.** Example of how it could be added:
+**In this project** — `bronze_to_silver` must finish within 30 minutes:
 
 ```python
-@task(sla=timedelta(hours=2))
-def extract_to_bronze(**context) -> int:
+@task(
+    sla=timedelta(minutes=30),
+    sla_miss_callback=alert_on_sla_miss,
+)
+def bronze_to_silver(**context) -> int:
     ...
 ```
 
 ---
 
-## ❌ `on_failure_callback` — not covered
+## ✅ `on_failure_callback`
 
-A **callback** runs when a task fails — useful for Slack/email alerts.
+A **callback** runs when a task fails — useful for Slack/email alerts. Here it logs to task logs.
 
-**Not covered in this project.** Example of how it could be added:
+**In this project** — `plugins/google_fit/callbacks.py`:
 
 ```python
-def alert_on_failure(context):
-    print(f"Task {context['task_instance'].task_id} failed!")
-
-@task(on_failure_callback=alert_on_failure)
-def extract_to_bronze(**context) -> int:
-    ...
+def alert_on_failure(context) -> None:
+    ti = context["task_instance"]
+    print(f"[on_failure_callback] task={ti.task_id} dag={ti.dag_id}")
 ```
+
+Used on `extract_to_bronze` and `bronze_to_silver`.
 
 ---
 
-## ❌ BranchPythonOperator — not covered
+## ✅ BranchPythonOperator
 
 **Branching** runs only one downstream path based on a condition.
 
-**Not covered in this project.** Example of how it could be added:
+**In this project** — skip transform when API returns zero buckets:
 
 ```python
-from airflow.operators.python import BranchPythonOperator
+def _choose_branch(**context) -> str:
+    bucket_count = context["ti"].xcom_pull(task_ids="extract_to_bronze")
+    if bucket_count == 0:
+        return "skip_transform"
+    return "trigger_transform"
 
-def choose_branch(**context):
-    if bronze_is_empty(context):
-        return "skip_gold"
-    return "bronze_to_silver"
+branch_on_bucket_count = BranchPythonOperator(
+    task_id="branch_on_bucket_count",
+    python_callable=_choose_branch,
+)
+
+extract >> branch_on_bucket_count >> [trigger_transform, skip_transform]
 ```
 
 ---
@@ -446,11 +455,11 @@ def choose_branch(**context):
 | Task Groups | ❌ not covered | — |
 | Dynamic Task Mapping | ❌ not covered | — |
 | Trigger Rules | ❌ not covered | — |
-| Retries + `retry_delay` | ❌ not covered | — |
-| Variables & Params | ❌ not covered | — |
-| SLAs | ❌ not covered | — |
-| `on_failure_callback` | ❌ not covered | — |
-| BranchPythonOperator | ❌ not covered | — |
+| Retries + `retry_delay` | ✅ covered | `dag_google_fit_ingest.py` — `extract_to_bronze` |
+| Variables & Params | ✅ covered | `plugins/google_fit/dag_utils.py`, both DAG `params` |
+| SLAs | ✅ covered | `dag_google_fit_transform.py` — `bronze_to_silver` |
+| `on_failure_callback` | ✅ covered | `plugins/google_fit/callbacks.py` |
+| BranchPythonOperator | ✅ covered | `dag_google_fit_ingest.py` — `branch_on_bucket_count` |
 
 ---
 

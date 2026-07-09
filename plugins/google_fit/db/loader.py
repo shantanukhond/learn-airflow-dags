@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from sqlalchemy import func, text
@@ -36,31 +36,34 @@ def ensure_schemas(hook: PostgresHook) -> None:
     models.Base.metadata.create_all(engine)
 
 
-def _as_date(value: date | str) -> date:
-    return date.fromisoformat(value) if isinstance(value, str) else value
+def _as_date(value: date | datetime | str) -> date:
+    if isinstance(value, str):
+        return date.fromisoformat(value)
+    if isinstance(value, datetime):
+        return value.date()
+    return value
 
 
-def save_bronze(hook: PostgresHook, run_date: date | str, payload: dict) -> None:
+def save_bronze(
+    hook: PostgresHook,
+    start: date | datetime | str,
+    end: date | datetime | str,
+    payload: dict,
+) -> None:
     models = _models()
     engine = hook.get_sqlalchemy_engine()
-    row_date = _as_date(run_date)
+    start_date = _as_date(start)
+    end_date = _as_date(end)
     with Session(engine) as session:
-        stmt = insert(models.BronzeFitnessRaw).values(run_date=row_date, payload=payload)
+        stmt = insert(models.BronzeFitnessRaw).values(
+            start=start_date, end=end_date, payload=payload
+        )
         stmt = stmt.on_conflict_do_update(
-            index_elements=["run_date"],
+            index_elements=["start", "end"],
             set_={"payload": stmt.excluded.payload, "loaded_at": func.now()},
         )
         session.execute(stmt)
         session.commit()
-
-
-def load_bronze(hook: PostgresHook, run_date: date | str) -> dict:
-    models = _models()
-    engine = hook.get_sqlalchemy_engine()
-    row_date = _as_date(run_date)
-    with Session(engine) as session:
-        row = session.get(models.BronzeFitnessRaw, row_date)
-        return row.payload if row else {}
 
 
 def save_silver(hook: PostgresHook, records: dict[str, list[dict]]) -> int:

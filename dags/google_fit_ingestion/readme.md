@@ -21,14 +21,14 @@ Mapped to the [Core Concepts](https://airflow.atwish.org/docs/core-concepts) doc
 | **Task dependencies** | covered | `bronze_to_silver >> silver_to_gold` plus TaskFlow `silver_to_gold(silver)` in `google_fit_transform` |
 | **Context (`**context`)** | covered | `data_interval_end`, `logical_date` to compute the 7-day lookback window |
 | **Sensors** | not covered | — |
-| **Task Groups** | not covered | — |
-| **Dynamic Task Mapping** | not covered | — |
-| **Trigger Rules** | not covered | — |
-| **Retries + `retry_delay`** | not covered | — |
-| **Variables & Params** | not covered | — |
-| **SLAs / `sla_miss_callback`** | not covered | — |
-| **`on_failure_callback`** | not covered | — |
-| **BranchPythonOperator** | not covered | — |
+| **Task Groups** | covered | `refine_layer` groups silver/gold tasks in transform DAG |
+| **Dynamic Task Mapping** | covered | `emit_metric.expand(...)` runs one task per metric |
+| **Trigger Rules** | covered | `finalize_run` uses `trigger_rule=\"all_done\"` |
+| **Retries + `retry_delay`** | covered | `extract_to_bronze` retries 2× with 2-minute delay |
+| **Variables & Params** | covered | `params.lookback_days` per run; Variable `google_fit_lookback_days` as global fallback |
+| **SLAs / `sla_miss_callback`** | covered | `bronze_to_silver` SLA 30 min + `alert_on_sla_miss` |
+| **`on_failure_callback`** | covered | `alert_on_failure` on `extract_to_bronze` and `bronze_to_silver` |
+| **BranchPythonOperator** | covered | `branch_on_bucket_count` skips transform when `bucket_count == 0` |
 
 See **[airflow-concepts.md](airflow-concepts.md)** for code examples of every concept above.
 

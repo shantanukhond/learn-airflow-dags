@@ -13,7 +13,8 @@ class BronzeFitnessRaw(Base):
     __tablename__ = "fitness_raw"
     __table_args__ = {"schema": "bronze"}
 
-    run_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    start: Mapped[date] = mapped_column(Date, primary_key=True)
+    end: Mapped[date] = mapped_column(Date, primary_key=True)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     loaded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

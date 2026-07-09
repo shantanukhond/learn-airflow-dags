@@ -1,25 +1,14 @@
-from datetime import date, datetime, timedelta, timezone
-
 POSTGRES_CONN_ID = "google_fit_postgres"
 GOOGLE_FIT_CONN_ID = "google_fit_api"
 LOOKBACK_DAYS = 7
+LOOKBACK_DAYS_VAR = "google_fit_lookback_days"
 
 
-def lookback_window(context: dict, days: int = LOOKBACK_DAYS) -> tuple[datetime, datetime]:
-    """Last N complete UTC days ending yesterday (excludes today)."""
-    ref = context["data_interval_end"] or context["data_interval_start"]
-    if ref.tzinfo is None:
-        ref = ref.replace(tzinfo=timezone.utc)
-    else:
-        ref = ref.astimezone(timezone.utc)
+def lookback_days_from_context(context: dict) -> int:
+    """--params + --variable: param overrides per run; Variable is global fallback."""
+    from airflow.models import Variable
 
-    run_day = ref.replace(hour=0, minute=0, second=0, microsecond=0)
-    end = run_day
-    start = run_day - timedelta(days=days)
-    return start, end
-
-
-def bronze_run_date(context: dict, days: int = LOOKBACK_DAYS) -> date:
-    """Bronze PK date — yesterday (last day in the lookback window)."""
-    _, end = lookback_window(context, days)
-    return (end - timedelta(days=1)).date()
+    param_days = context.get("params", {}).get("lookback_days")
+    if param_days is not None:
+        return int(param_days)
+    return int(Variable.get(LOOKBACK_DAYS_VAR, default_var=LOOKBACK_DAYS))
