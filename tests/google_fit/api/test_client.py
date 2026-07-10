@@ -21,7 +21,6 @@ class TestFetchFitnessStub:
 
         assert silver["steps"][0]["date"] == "2024-06-01"
         assert silver["steps"][0]["steps"] == 0
-        assert silver["distance"][0]["distance_m"] == 0.0
         assert silver["sleep"][0]["sleep_minutes"] == 0.0
 
 
@@ -39,7 +38,6 @@ class TestFetchFitnessApi:
                     "startTimeMillis": bucket_start_ms,
                     "dataset": [
                         {"point": [{"value": [{"intVal": 1000}]}]},
-                        {"point": [{"value": [{"fpVal": 1500.5}]}]},
                         {"point": [{"value": [{"fpVal": 250.0}]}]},
                         {"point": [{"value": [{"intVal": 45}]}]},
                         {"point": [{"value": [{"fpVal": 72.0}, {"fpVal": 68.0}]}]},
@@ -60,9 +58,6 @@ class TestFetchFitnessApi:
         silver = parse_aggregate_to_silver(payload)
 
         assert silver["steps"] == [{"date": "2024-06-01", "steps": 1000, "source": "google_fit"}]
-        assert silver["distance"] == [
-            {"date": "2024-06-01", "distance_m": 1500.5, "source": "google_fit"}
-        ]
         assert silver["calories"] == [
             {"date": "2024-06-01", "calories": 250.0, "source": "google_fit"}
         ]
@@ -91,4 +86,4 @@ class TestFetchFitnessApi:
         assert len(body["aggregateBy"]) == len(AGGREGATE_METRICS)
         data_types = [entry["dataTypeName"] for entry in body["aggregateBy"]]
         assert "com.google.sleep.segment" in data_types
-        assert "com.google.distance.delta" in data_types
+        assert "com.google.distance.delta" not in data_types

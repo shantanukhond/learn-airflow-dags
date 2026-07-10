@@ -10,7 +10,8 @@ def _constants():
     import google_fit.constants as constants
 
     # Reload if a long-lived worker cached a metrics list missing current keys.
-    expected = {"steps", "distance", "calories", "active_minutes", "heart_rate", "sleep"}
+    # distance is intentionally omitted: it needs fitness.location.read and 403s otherwise.
+    expected = {"steps", "calories", "active_minutes", "heart_rate", "sleep"}
     if {m.key for m in constants.AGGREGATE_METRICS} != expected:
         constants = importlib.reload(constants)
     return constants

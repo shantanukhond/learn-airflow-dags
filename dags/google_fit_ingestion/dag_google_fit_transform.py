@@ -36,13 +36,13 @@ def google_fit_transform():
         ensure_schemas(hook)
 
         row = hook.get_first(  # --cross-dag handoff: read bronze written by ingest DAG
-            "SELECT payload FROM bronze.fitness_raw WHERE start = %s AND end = %s",
+            "SELECT payload FROM bronze.fitness_raw WHERE start_date = %s AND end_date = %s",
             parameters=(start.date(), end.date()),
         )
         payload = row[0] if row else {}
         if not payload:
             print(
-                f"WARNING: no bronze row for start={start.date()} end={end.date()} "
+                f"WARNING: no bronze row for start_date={start.date()} end_date={end.date()} "
                 "— run google_fit_ingest first."
             )
             return 0  # --xcom push: return 0 if no bronze data

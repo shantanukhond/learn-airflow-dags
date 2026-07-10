@@ -64,7 +64,7 @@ def google_fit_ingest():
             print("WARNING: empty bucket — no fitness data for this date range.")
 
         save_bronze(hook, start, end, payload)  # --cross-dag handoff: bronze table in Postgres
-        print(f"Saved bronze.fitness_raw for start={start.date()} end={end.date()}")
+        print(f"Saved bronze.fitness_raw for start_date={start.date()} end_date={end.date()}")
         return bucket_count  # --xcom push: TaskFlow stores return value as XCom
 
     @task  # --branch path: runs when bucket_count is 0

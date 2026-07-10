@@ -9,7 +9,6 @@ SCHEMAS = ("bronze", "silver", "gold")
 
 SILVER_UPSERT_KEYS: dict[str, tuple[str, str]] = {
     "steps": ("SilverDailySteps", "steps"),
-    "distance": ("SilverDailyDistance", "distance_m"),
     "calories": ("SilverDailyCalories", "calories"),
     "active_minutes": ("SilverDailyActiveMinutes", "active_minutes"),
     "heart_rate": ("SilverDailyHeartRate", "avg_bpm"),
@@ -23,13 +22,15 @@ def _models():
 
     import google_fit.db.models as models
 
-    if not hasattr(models, "SilverDailyActiveMinutes"):
+    if not hasattr(models, "SilverDailyActiveMinutes") or not hasattr(
+        models, "SilverDailyDistance"
+    ):
         models = importlib.reload(models)
     return models
 
 
 def _migrate_bronze_fitness_raw(conn) -> None:
-    """Recreate bronze.fitness_raw when it still has the pre-lookback run_date PK."""
+    """Align bronze.fitness_raw with the current start_date/end_date PK."""
     exists = conn.execute(
         text(
             """
@@ -42,30 +43,29 @@ def _migrate_bronze_fitness_raw(conn) -> None:
     if not exists:
         return
 
-    has_run_date = conn.execute(
-        text(
-            """
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = 'bronze'
-              AND table_name = 'fitness_raw'
-              AND column_name = 'run_date'
-            """
+    columns = {
+        row[0]
+        for row in conn.execute(
+            text(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'bronze' AND table_name = 'fitness_raw'
+                """
+            )
         )
-    ).scalar()
-    has_start = conn.execute(
-        text(
-            """
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = 'bronze'
-              AND table_name = 'fitness_raw'
-              AND column_name = 'start'
-            """
-        )
-    ).scalar()
-    if has_run_date and not has_start:
+    }
+
+    # Pre-lookback schema: single run_date PK — drop and recreate.
+    if "run_date" in columns and "start_date" not in columns and "start" not in columns:
         conn.execute(text("DROP TABLE bronze.fitness_raw"))
+        return
+
+    # Intermediate schema used reserved "end" — rename to start_date/end_date.
+    if "start" in columns and "start_date" not in columns:
+        conn.execute(text('ALTER TABLE bronze.fitness_raw RENAME COLUMN start TO start_date'))
+    if "end" in columns and "end_date" not in columns:
+        conn.execute(text('ALTER TABLE bronze.fitness_raw RENAME COLUMN "end" TO end_date'))
 
 
 def ensure_schemas(hook: PostgresHook) -> None:
@@ -98,10 +98,10 @@ def save_bronze(
     end_date = _as_date(end)
     with Session(engine) as session:
         stmt = insert(models.BronzeFitnessRaw).values(
-            start=start_date, end=end_date, payload=payload
+            start_date=start_date, end_date=end_date, payload=payload
         )
         stmt = stmt.on_conflict_do_update(
-            index_elements=["start", "end"],
+            index_elements=["start_date", "end_date"],
             set_={"payload": stmt.excluded.payload, "loaded_at": func.now()},
         )
         session.execute(stmt)
