@@ -14,13 +14,13 @@ from google_fit.dag_utils import LOOKBACK_DAYS, POSTGRES_CONN_ID, lookback_days_
     schedule=None,  # --scheduling: only runs when triggered
     catchup=False,
     params={"lookback_days": LOOKBACK_DAYS},  # --params: override per run from Airflow UI
+    sla_miss_callback=alert_on_sla_miss,  # --sla_miss_callback: DAG-level; fires when any task misses SLA
     tags=["google_fit", "silver", "gold"],
     description="Bronze → silver → gold with explicit task dependencies.",
 )
 def google_fit_transform():
     @task(  # --taskflow: python function becomes an Airflow task
         sla=timedelta(minutes=30),  # --sla: flag task if not done within 30 minutes
-        sla_miss_callback=alert_on_sla_miss,  # --sla_miss_callback: alert on SLA breach
         on_failure_callback=alert_on_failure,  # --on_failure_callback: alert when task fails
     )
     def bronze_to_silver(**context) -> int:  # --context: Airflow injects runtime metadata dict
