@@ -18,6 +18,7 @@ class AggregateMetric:
 
 AGGREGATE_METRICS: tuple[AggregateMetric, ...] = (
     AggregateMetric("steps", "com.google.step_count.delta", "int", "steps", "sum_int"),
+    AggregateMetric("distance", "com.google.distance.delta", "float", "distance_m", "sum_float"),
     AggregateMetric("calories", "com.google.calories.expended", "float", "calories", "sum_float"),
     AggregateMetric(
         "active_minutes", "com.google.active_minutes", "int", "active_minutes", "sum_int"

@@ -9,6 +9,7 @@ SCHEMAS = ("bronze", "silver", "gold")
 
 SILVER_UPSERT_KEYS: dict[str, tuple[str, str]] = {
     "steps": ("SilverDailySteps", "steps"),
+    "distance": ("SilverDailyDistance", "distance_m"),
     "calories": ("SilverDailyCalories", "calories"),
     "active_minutes": ("SilverDailyActiveMinutes", "active_minutes"),
     "heart_rate": ("SilverDailyHeartRate", "avg_bpm"),
@@ -27,12 +28,53 @@ def _models():
     return models
 
 
+def _migrate_bronze_fitness_raw(conn) -> None:
+    """Recreate bronze.fitness_raw when it still has the pre-lookback run_date PK."""
+    exists = conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'bronze' AND table_name = 'fitness_raw'
+            """
+        )
+    ).scalar()
+    if not exists:
+        return
+
+    has_run_date = conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'bronze'
+              AND table_name = 'fitness_raw'
+              AND column_name = 'run_date'
+            """
+        )
+    ).scalar()
+    has_start = conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'bronze'
+              AND table_name = 'fitness_raw'
+              AND column_name = 'start'
+            """
+        )
+    ).scalar()
+    if has_run_date and not has_start:
+        conn.execute(text("DROP TABLE bronze.fitness_raw"))
+
+
 def ensure_schemas(hook: PostgresHook) -> None:
     models = _models()
     engine = hook.get_sqlalchemy_engine()
     with engine.begin() as conn:
         for schema in SCHEMAS:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
+        _migrate_bronze_fitness_raw(conn)
     models.Base.metadata.create_all(engine)
 
 

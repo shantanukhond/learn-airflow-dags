@@ -9,7 +9,9 @@ def _constants():
 
     import google_fit.constants as constants
 
-    if any(m.data_type_name == "com.google.distance.delta" for m in constants.AGGREGATE_METRICS):
+    # Reload if a long-lived worker cached a metrics list missing current keys.
+    expected = {"steps", "distance", "calories", "active_minutes", "heart_rate", "sleep"}
+    if {m.key for m in constants.AGGREGATE_METRICS} != expected:
         constants = importlib.reload(constants)
     return constants
 

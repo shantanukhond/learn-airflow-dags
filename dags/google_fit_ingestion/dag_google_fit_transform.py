@@ -10,7 +10,7 @@ from google_fit.dag_utils import LOOKBACK_DAYS, POSTGRES_CONN_ID, lookback_days_
 
 @dag(  # --dag definition
     dag_id="google_fit_transform",
-    start_date=datetime(2024, 1, 1),
+    start_date=datetime(2026, 1, 1),
     schedule=None,  # --scheduling: only runs when triggered
     catchup=False,
     params={"lookback_days": LOOKBACK_DAYS},  # --params: override per run from Airflow UI
